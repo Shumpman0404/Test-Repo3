@@ -1,0 +1,64 @@
+services:
+  postgres:
+    build:
+      context: ./AI-Safety-Postgres_DB
+      dockerfile: Dockerfile
+    container_name: AI-Safety_postgres_db
+    environment:
+      POSTGRES_USER: AI-Safety-Through-Debate
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: AI-Safety-Through-Debate
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - AI-Safety
+
+  feed_grabber:
+    build:
+      context: ./AI-Safety-RSS_Feed_Grabber_03
+      dockerfile: Dockerfile
+    container_name: AI-Safety_feed_grabber
+    environment:
+      DATABASE_URL: postgres://AI-Safety-Through-Debate:mypassword@AI-Safety_postgres_db:5432/AI-Safety-Through-Debate
+    depends_on:
+      - postgres
+    ports:
+      - "8502:8504"  # Map host port 8502 to container port 8501
+    networks:
+      - AI-Safety
+
+  rss_streamlit_app:
+    build:
+      context: ./AI-Safety-DB-View
+      dockerfile: Dockerfile
+    container_name: AI-Safety_DB-View
+    environment:
+      DATABASE_URL: postgres://AI-Safety-Through-Debate:mypassword@AI-Safety_postgres_db:5432/AI-Safety-Through-Debate
+    depends_on:
+      - postgres
+    ports:
+      - "8501:8501"  # Map host port 8501 to container port 8501
+    networks:
+      - AI-Safety
+
+  jupyterlab:
+    build:
+      context: ./AI-Safety-JupyterLab
+      dockerfile: Dockerfile
+    container_name: AI-Safety_JupyterLab
+    volumes:
+      - ./AI-Safety-JupyterLab:/workspace  # Mount the workspace folder
+    ports:
+      - "8888:8888"  # Map host port 8888 to container port 8888
+    networks:
+      - AI-Safety
+
+volumes:
+  pg_data:
+    driver: local
+
+networks:
+  AI-Safety:
+    driver: bridge
